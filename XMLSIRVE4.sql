@@ -128,7 +128,32 @@ FROM OPENROWSET(BULK 'C:\Users\user\Documents\TEC\BASES1 FRANCO\CA3\DatosTarea2-
 	SELECT * FROM TipoMov
 
 
+	--insercion tipo evento
+	INSERT INTO dbo.TipoEvento(Id,Nombre)
+		
+	SELECT  
+		
+		Id = T.Item.value('@Id', 'int'),
+		Nombre = T.Item.value('@Nombre', 'varchar(64)')
 
+	FROM @datos.nodes('//Datos/TipoEventos/TipoEvento') as T(Item)
+
+	SELECT * FROM TipoEvento
+
+	--insercion tipo mov CO
+	INSERT INTO dbo.TipoMovCO(Id,Operacion,Nombre)
+		
+	SELECT  
+		
+		Id = T.Item.value('@Id', 'int'),
+		
+		Operacion = T.Item.value('@Operacion', 'varchar(64)'),
+		Nombre = T.Item.value('@Descripcion', 'varchar(64)')
+		
+		
+	FROM @datos.nodes('//Datos/TipoMovimientosCO/TipoMovimientoCO') as T(Item)
+
+	SELECT * FROM TipoMovCO
 	
 DECLARE @FechasProcesar TABLE (Fecha date)
 INSERT @FechasProcesar(Fecha)
