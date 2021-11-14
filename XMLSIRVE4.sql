@@ -26,6 +26,8 @@ DECLARE @contE INT=1, @IdCuentaAhorrosE INT, @IdEstadoCuentaE INT, @IdTipoCuenta
 @diferenciaRetirosHumanoE INT, @diferenciaRetirosATME INT, @ContRetiroAtmE INT, 
 @ContRetiroHumanoE INT, @TasaInteresE INT, @SumaE INT, @CargoMensualE INT
 
+DECLARE @mesinicio INT, @mesfinal INT;
+
 SELECT @datos = CAST(xmlfile AS xml)
 FROM OPENROWSET(BULK 'C:\Users\user\Documents\TEC\BASES1 FRANCO\CA3\DatosTarea2-8.xml', SINGLE_BLOB) AS T(xmlfile)
 
@@ -608,8 +610,36 @@ BEGIN
 	SET @contE+=1
 
 	END;
+	 --intereses CO
+	DECLARE @contCO INT = 1, @CantCuentasCO INT, @fechaInicioCO date, @fechaFinalCO date, @numMeses int, @saldoCO INT, 
+	@IdTasaCO INT, @IdTasa INT, @tasa INT; 
 
+	SET @CantCuentasCO = (SELECT count(Id) from CuentaObjetivo  )
 	
+	WHILE @contCO<=@CantCuentas
+	BEGIN
+		-- mapeo mes inicial
+		SET @fechaInicioCO = (SELECT (FechaInicio) FROM CuentaObjetivo WHERE Id = @contCO )
+		SET @mesinicio = EXTRACT(MONTH FROM @fechaInicioCO)
+
+		-- mapeo mes final
+		SET @fechaFinalCO = (SELECT (FechaFinal) FROM CuentaObjetivo WHERE Id = @contCO )
+		SET @mesfinal = EXTRACT(MONTH FROM @fechaFinalCO)
+
+		-- resta
+		SET @numMeses = ABS((@mesfinal - @mesinicio))
+
+		-- mapeo saldo y tasa intereses
+		SET @saldoCO = (SELECT (Saldo) FROM CuentaObjetivo WHERE Id = @contCO )
+		SET @IdTasaCO = (SELECT IdTasa FROM CuentaObjetivo WHERE Id = @contCO)
+		SET @IdTasa = (SELECT Id FROM TasasInteresesCO WHERE Id = @IdTasaCO) --mes
+		SET @tasa = (SELECT Tasa FROM TasasInteresesCO WHERE Id = @IdTasa) 
+		SET @saldoCO = @saldoCO + (@saldoCO * (@tasa / 100))
+
+		
+		-- contador del while 
+		SET @contCO = @contCO + 1
+	END;
 
 	SET @fechaInicial = (SELECT(DATEADD(DAY,1,@fechaInicial)))
 END;
