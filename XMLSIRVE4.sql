@@ -261,27 +261,25 @@ BEGIN
 	FROM @datos.nodes('//Datos/FechaOperacion/Movimientos') as T(Item)
 	
 
-	
-
-
 	SELECT * FROM dbo.Movimientos
 
 	-- insercion cuenta objetivo 
 
-	INSERT INTO dbo.CuentaObjetivo(Descripcion,DiaAhorro,FechaInicio,FechaFinal,MontoAhorrar,IdCuentaAhorros,NumCuentaObjetivo)
+	INSERT INTO dbo.CuentaObjetivo(Descripcion,DiaAhorro,FechaInicio,FechaFinal,MontoAhorrar,IdCuentaAhorros,NumCuentaObjetivo,Saldo)
 	SELECT  
 		
 		Descripcion = T.Item.value('@Descripcion', 'varchar(64)'),
-		DiaAhorro = T.Item.value('@DiadeAhorro', 'varchar(64)'),
+		DiaAhorro = T.Item.value('@DiadeAhorro', 'int'),
 		FechaInicio = T.item.value('../@Fecha', 'DATE'),
 		FechaFinal = T.item.value('@FechaFinal', 'DATE'),
 		MontoAhorrar = T.Item.value('@MontoAhorrar', 'int'),
 		IdCuentaAhorros = (SELECT Id FROM CuentaAhorros WHERE NumCuenta = T.Item.value('@CuentaMaestra', 'int')),
-		NumCuentaObjetivo = T.Item.value('@NumeroCO', 'int')
+		NumCuentaObjetivo = T.Item.value('@NumeroCO', 'int'),
+		Saldo=0
 		
 
 		
-	FROM @datos.nodes('//Datos/FechaOperacion/Movimientos') as T(Item)
+	FROM @datos.nodes('//Datos/FechaOperacion/AgregarCO') as T(Item)
 	
 	SELECT * FROM dbo.CuentaObjetivo
 
@@ -625,6 +623,8 @@ BEGIN
 	SET @contE+=1
 
 	END;
+	 
+
 	 --intereses CO
 	DECLARE @contCO INT = 1, @CantCuentasCO INT, @fechaInicioCO date, @fechaFinalCO date, @numMeses int, @saldoCO INT, 
 	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio DATE, @mes INT, @diaahorro INT, @fechaAhorro date, @diafechainicio INT; 
@@ -632,7 +632,7 @@ BEGIN
 	SET @CantCuentasCO = (SELECT count(Id) from CuentaObjetivo  );
 
 	-- tabla temporal intereses CO
-	CREATE TABLE InteresesCO (Id int identity(1,1), IDCO int, IdCuenta int, MontoIntereses int);
+	--CREATE TABLE InteresesCO (Id int identity(1,1), IDCO int, IdCuenta int, MontoIntereses int);
 	
 	WHILE @contCO<=@CantCuentas
 	BEGIN
@@ -672,7 +672,7 @@ BEGIN
 			DECLARE @descripCO varchar(64);
 			SET @descripCO = (SELECT Descripcion FROM CuentaObjetivo WHERE Id = @contCO );
 			-- monto acumulado va en tabla CO en columna interes acumulado, este insert iria abajo 
-			INSERT INTO InteresesCO (IDCO, IdCuenta,MontoIntereses) VALUES (@IDCO, @IdCuentaIntereses,@tasa, @descripCO)
+			--INSERT INTO InteresesCO (IDCO, IdCuenta,MontoIntereses) VALUES (@IDCO, @IdCuentaIntereses,@tasa, @descripCO)
 
 		SET @montoAhorrar =(SELECT MontoAhorrar FROM CuentaObjetivo WHERE Id = @contCO);
 		INSERT INTO MovInteresesCO (Fecha,Monto,IdCuentaObjetivo,NuevoInteresAcumulado,Descripcion) VALUES
@@ -683,7 +683,3 @@ BEGIN
 
 	SET @fechaInicial = (SELECT(DATEADD(DAY,1,@fechaInicial)))
 END;
-
---DELETE FROM Personas WHERE Id >42
---DELETE FROM TipoCambio WHERE Id >121
-
