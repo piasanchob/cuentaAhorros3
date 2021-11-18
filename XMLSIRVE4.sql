@@ -28,8 +28,10 @@ DECLARE @contE INT=1, @IdCuentaAhorrosE INT, @IdEstadoCuentaE INT, @IdTipoCuenta
 
 DECLARE @mesinicio INT, @mesfinal INT;
 
+--SELECT @datos = CAST(xmlfile AS xml)
+--FROM OPENROWSET(BULK 'C:\Users\gmora\OneDrive\Desktop\2 SEMESTRE 2021\Bases de Datos\Tarea Programada 3\cuentaAhorros3\cuentaAhorros3\DatosTarea3.xml', SINGLE_BLOB) AS T(xmlfile)
 SELECT @datos = CAST(xmlfile AS xml)
-FROM OPENROWSET(BULK 'C:\Users\gmora\OneDrive\Desktop\2 SEMESTRE 2021\Bases de Datos\Tarea Programada 3\cuentaAhorros3\cuentaAhorros3\DatosTarea3.xml', SINGLE_BLOB) AS T(xmlfile)
+FROM OPENROWSET(BULK 'C:\Users\user\Documents\TEC\BASES1 FRANCO\CA3\DatosTarea3.xml', SINGLE_BLOB) AS T(xmlfile)
 
 --insercion usuarios
 
@@ -627,7 +629,7 @@ BEGIN
 	END;
 	 --intereses CO
 	DECLARE @contCO INT = 1, @CantCuentasCO INT, @fechaInicioCO date, @fechaFinalCO date, @numMeses int, @saldoCO INT, 
-	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio DATE, @mes INT, @diaahorro INT, @fechaAhorro date, @diafechainicio INT; 
+	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio int, @mes INT, @diaahorro INT, @fechaAhorro date, @diafechainicio INT; 
 	DECLARE @IDCO int, @IdCuentaIntereses int, @MontoIntereses int, @montoAhorrar int;
 	SET @CantCuentasCO = (SELECT count(Id) from CuentaObjetivo  );
 
