@@ -240,10 +240,6 @@ BEGIN
 	
 
 	SELECT * FROM dbo.Beneficiarios
-	
-
-
-	--insercion tipo cambio
 
 	
 
@@ -269,6 +265,25 @@ BEGIN
 
 
 	SELECT * FROM dbo.Movimientos
+
+	-- insercion cuenta objetivo 
+
+	INSERT INTO dbo.CuentaObjetivo(Descripcion,DiaAhorro,FechaInicio,FechaFinal,MontoAhorrar,IdCuentaAhorros,NumCuentaObjetivo)
+	SELECT  
+		
+		Descripcion = T.Item.value('@Descripcion', 'varchar(64)'),
+		DiaAhorro = T.Item.value('@DiadeAhorro', 'varchar(64)'),
+		FechaInicio = T.item.value('../@Fecha', 'DATE'),
+		FechaFinal = T.item.value('@FechaFinal', 'DATE'),
+		MontoAhorrar = T.Item.value('@MontoAhorrar', 'int'),
+		IdCuentaAhorros = (SELECT Id FROM CuentaAhorros WHERE NumCuenta = T.Item.value('@CuentaMaestra', 'int')),
+		NumCuentaObjetivo = T.Item.value('@NumeroCO', 'int');
+		
+
+		
+	FROM @datos.nodes('//Datos/FechaOperacion/Movimientos') as T(Item)
+	
+
 
 	SET @var2 = (SELECT NuevoSaldo FROM Movimientos WHERE Id= 5)
 	IF @var2=NULL
@@ -612,31 +627,50 @@ BEGIN
 	END;
 	 --intereses CO
 	DECLARE @contCO INT = 1, @CantCuentasCO INT, @fechaInicioCO date, @fechaFinalCO date, @numMeses int, @saldoCO INT, 
-	@IdTasaCO INT, @IdTasa INT, @tasa INT; 
+	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio INT, @mes INT, @diaahorro int, @fechaAhorro date, @diafechainicio int; 
+	DECLARE @IDCO int, @IdCuentaIntereses int, @MontoIntereses int, @montoAhorrar int;
+	SET @CantCuentasCO = (SELECT count(Id) from CuentaObjetivo  );
 
-	SET @CantCuentasCO = (SELECT count(Id) from CuentaObjetivo  )
+	-- tabla temporal intereses CO
+	CREATE TABLE InteresesCO (Id int identity(1,1), IDCO int, IdCuenta int, MontoIntereses int);
 	
 	WHILE @contCO<=@CantCuentas
 	BEGIN
-		-- mapeo mes inicial
-		SET @fechaInicioCO = (SELECT (FechaInicio) FROM CuentaObjetivo WHERE Id = @contCO )
-		SET @mesinicio = EXTRACT(MONTH FROM @fechaInicioCO)
-
-		-- mapeo mes final
-		SET @fechaFinalCO = (SELECT (FechaFinal) FROM CuentaObjetivo WHERE Id = @contCO )
-		SET @mesfinal = EXTRACT(MONTH FROM @fechaFinalCO)
-
-		-- resta
-		SET @numMeses = ABS((@mesfinal - @mesinicio))
-
-		-- mapeo saldo y tasa intereses
-		SET @saldoCO = (SELECT (Saldo) FROM CuentaObjetivo WHERE Id = @contCO )
-		SET @IdTasaCO = (SELECT IdTasa FROM CuentaObjetivo WHERE Id = @contCO)
-		SET @IdTasa = (SELECT Id FROM TasasInteresesCO WHERE Id = @IdTasaCO) --mes
-		SET @tasa = (SELECT Tasa FROM TasasInteresesCO WHERE Id = @IdTasa) 
-		SET @saldoCO = @saldoCO + (@saldoCO * (@tasa / 100))
+		-- mapeo fechas inicial
+		SET @diaahorro = ((SELECT (DiaAhorro) FROM CuentaObjetivo WHERE Id = @contCO )
+		SET @fechaInicioCO = (SELECT (FechaInicio) FROM CuentaObjetivo WHERE Id = @contCO );
+		SET @mesinicio = EXTRACT(MONTH FROM @fechaInicioCO);
+		SET @añoinicio = EXTRACT(YEAR FROM @fechaInicioCO);
+		SET @diafechainicio = EXTRACT(DAY FROM @fechaInicioCO); 
+		IF @diafechainicio = @diaahorro
 
 		
+			SET @IDCO = (SELECT (Id) FROM CuentaObjetivo WHERE Id = @contCO)
+			SET @IdCuentaIntereses = (SELECT (@IdCuentaAhorros) FROM CuentaObjetivo WHERE Id = @contCO)
+
+		
+
+			-- mapeo mes final
+			SET @fechaFinalCO = (SELECT (FechaFinal) FROM CuentaObjetivo WHERE Id = @contCO );
+			SET @mesfinal = EXTRACT(MONTH FROM @fechaFinalCO);
+
+			-- resta
+			SET @numMeses = ABS((@mesfinal - @mesinicio));
+
+			-- mapeo saldo y tasa intereses
+			SET @saldoCO = (SELECT (Saldo) FROM CuentaObjetivo WHERE Id = @contCO );
+			SET @IdTasaCO = (SELECT IdTasa FROM CuentaObjetivo WHERE Id = @contCO);
+			SET @IdTasa = (SELECT Id FROM TasasInteresesCO WHERE Id = @IdTasaCO); --mes
+			SET @tasa = (SELECT Tasa FROM TasasInteresesCO WHERE Id = @IdTasa);
+			SET @saldoCO = @saldoCO + (@saldoCO * (@tasa / 100));
+			DECLARE @descripCO varchar(64);
+			SET @descripCO = (SELECT Descripcion FROM CuentaObjetivo WHERE Id = @contCO );
+			-- monto acumulado va en tabla CO en columna interes acumulado, este insert iria abajo 
+			INSERT INTO InteresesCO (IDCO, IdCuenta,MontoIntereses) VALUES (@IDCO, @IdCuentaIntereses,@tasa, @descripCO)
+
+		SET @montoAhorrar =(SELECT MontoAhorrar FROM CuentaObjetivo WHERE Id = @contCO);
+		INSERT INTO MovInteresesCO (Fecha,Monto,IdCuentaObjetivo,NuevoInteresAcumulado,Descripcion) VALUES
+		(@FechaInicioCO,@saldoCO,@IDCO,@tasa,
 		-- contador del while 
 		SET @contCO = @contCO + 1
 	END;
