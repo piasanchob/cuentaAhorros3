@@ -29,7 +29,7 @@ DECLARE @contE INT=1, @IdCuentaAhorrosE INT, @IdEstadoCuentaE INT, @IdTipoCuenta
 DECLARE @mesinicio INT, @mesfinal INT;
 
 SELECT @datos = CAST(xmlfile AS xml)
-FROM OPENROWSET(BULK 'C:\Users\user\Documents\TEC\BASES1 FRANCO\CA3\DatosTarea2-8.xml', SINGLE_BLOB) AS T(xmlfile)
+FROM OPENROWSET(BULK 'C:\Users\gmora\OneDrive\Desktop\2 SEMESTRE 2021\Bases de Datos\Tarea Programada 3\cuentaAhorros3\cuentaAhorros3\DatosTarea3.xml', SINGLE_BLOB) AS T(xmlfile)
 
 --insercion usuarios
 
@@ -277,13 +277,13 @@ BEGIN
 		FechaFinal = T.item.value('@FechaFinal', 'DATE'),
 		MontoAhorrar = T.Item.value('@MontoAhorrar', 'int'),
 		IdCuentaAhorros = (SELECT Id FROM CuentaAhorros WHERE NumCuenta = T.Item.value('@CuentaMaestra', 'int')),
-		NumCuentaObjetivo = T.Item.value('@NumeroCO', 'int');
+		NumCuentaObjetivo = T.Item.value('@NumeroCO', 'int')
 		
 
 		
 	FROM @datos.nodes('//Datos/FechaOperacion/Movimientos') as T(Item)
 	
-
+	SELECT * FROM dbo.CuentaObjetivo
 
 	SET @var2 = (SELECT NuevoSaldo FROM Movimientos WHERE Id= 5)
 	IF @var2=NULL
@@ -627,7 +627,7 @@ BEGIN
 	END;
 	 --intereses CO
 	DECLARE @contCO INT = 1, @CantCuentasCO INT, @fechaInicioCO date, @fechaFinalCO date, @numMeses int, @saldoCO INT, 
-	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio INT, @mes INT, @diaahorro int, @fechaAhorro date, @diafechainicio int; 
+	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio DATE, @mes INT, @diaahorro INT, @fechaAhorro date, @diafechainicio INT; 
 	DECLARE @IDCO int, @IdCuentaIntereses int, @MontoIntereses int, @montoAhorrar int;
 	SET @CantCuentasCO = (SELECT count(Id) from CuentaObjetivo  );
 
@@ -637,11 +637,15 @@ BEGIN
 	WHILE @contCO<=@CantCuentas
 	BEGIN
 		-- mapeo fechas inicial
-		SET @diaahorro = ((SELECT (DiaAhorro) FROM CuentaObjetivo WHERE Id = @contCO )
+		SET @diaahorro = (SELECT (DiaAhorro) FROM CuentaObjetivo WHERE Id = @contCO )
 		SET @fechaInicioCO = (SELECT (FechaInicio) FROM CuentaObjetivo WHERE Id = @contCO );
-		SET @mesinicio = EXTRACT(MONTH FROM @fechaInicioCO);
-		SET @añoinicio = EXTRACT(YEAR FROM @fechaInicioCO);
-		SET @diafechainicio = EXTRACT(DAY FROM @fechaInicioCO); 
+
+		
+		SET @mesinicio = (SELECT MONTH(@fechaInicioCO));
+		--SET @añoinicio = EXTRACT(YEAR FROM @fechaInicioCO);
+
+		
+		SET @diafechainicio = (SELECT DAY(@fechaInicioCO));
 		IF @diafechainicio = @diaahorro
 
 		
@@ -652,7 +656,9 @@ BEGIN
 
 			-- mapeo mes final
 			SET @fechaFinalCO = (SELECT (FechaFinal) FROM CuentaObjetivo WHERE Id = @contCO );
-			SET @mesfinal = EXTRACT(MONTH FROM @fechaFinalCO);
+
+			
+			SET @mesfinal = (SELECT MONTH(@fechaFinalCO));
 
 			-- resta
 			SET @numMeses = ABS((@mesfinal - @mesinicio));
@@ -670,9 +676,9 @@ BEGIN
 
 		SET @montoAhorrar =(SELECT MontoAhorrar FROM CuentaObjetivo WHERE Id = @contCO);
 		INSERT INTO MovInteresesCO (Fecha,Monto,IdCuentaObjetivo,NuevoInteresAcumulado,Descripcion) VALUES
-		(@FechaInicioCO,@saldoCO,@IDCO,@tasa,
+		(@FechaInicioCO,@saldoCO,@IDCO,@tasa,@descripCO)
 		-- contador del while 
-		SET @contCO = @contCO + 1
+		SET @contCO+=1
 	END;
 
 	SET @fechaInicial = (SELECT(DATEADD(DAY,1,@fechaInicial)))
