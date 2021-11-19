@@ -3,7 +3,7 @@ USE cuentaAhorros
 DECLARE @datos XML
 
 DECLARE @i INT=1,
-@var2 INT, @cont2 INT =1;
+@var2 INT, @cont2 INT =1, @fechaInicial2 DATE, @fechaFinal2 DATE, @idCuentaO INT = 1, @cantCO INT, @IdTasa2 INT, @FechaFin DATE, @FechaIni Date;
 
 DECLARE @IdMov2 INT = 1, @IdTipoMov2 INT, @CantRetiroHumano INT, @CantRetiroAtm INT, @IdCuentaAhorro INT,@CantMov INT,
 @CantCuentas INT,
@@ -156,6 +156,23 @@ FROM OPENROWSET(BULK 'C:\Users\gmora\OneDrive\Desktop\2 SEMESTRE 2021\Bases de D
 	FROM @datos.nodes('//Datos/TipoMovimientosCO/TipoMovimientoCO') as T(Item)
 
 	SELECT * FROM TipoMovCO
+
+	-- TASAS INTERSES CO
+
+	INSERT INTO dbo.TasasInteresesCO(Id,Tasa)
+		
+	SELECT  
+		
+		Id = T.Item.value('@Id', 'int'),
+		
+		Tasa= T.Item.value('@TasaInteres', 'float')
+		
+		
+	FROM @datos.nodes('//Datos/TasaInteresesCO/TasaInteresCO') as T(Item)
+
+	SELECT * FROM TasasInteresesCO
+
+
 	
 DECLARE @FechasProcesar TABLE (Fecha date)
 INSERT @FechasProcesar(Fecha)
@@ -276,6 +293,8 @@ BEGIN
 		IdCuentaAhorros = (SELECT Id FROM CuentaAhorros WHERE NumCuenta = T.Item.value('@CuentaMaestra', 'int')),
 		NumCuentaObjetivo = T.Item.value('@NumeroCO', 'int'),
 		Saldo=0
+		
+		
 		
 
 		
@@ -444,7 +463,7 @@ BEGIN
 	-- SET IDCUENTA AHORRO DE LA TABLA ESTADO DE CUENTA 
 	SET @IdEstadoCuenta = (SELECT Id FROM EstadoCuenta WHERE IdCuentaAhorros=@IdCuentaAhorros)
 
-	 SET @FechaInicial = (SELECT FechaInicio FROM EstadoCuenta WHERE IdCuentaAhorros=@IdCuentaAhorros)
+	 SET @FechaInicial2 = (SELECT FechaInicio FROM EstadoCuenta WHERE IdCuentaAhorros=@IdCuentaAhorros)
 
 	SET @IdTipoCuentaAhorro =(SELECT IdTipoCuenta FROM cuentaAhorros WHERE Id=@IdCuentaAhorros)
 	-- SET INTERES
@@ -521,11 +540,11 @@ BEGIN
 
 	SET @SaldoFinal = @Saldo - @CargoMensual
 
-	SET @fechaInicial= (SELECT(DATEADD(month,1,@fechaInicial)))
+	SET @fechaInicial2= (SELECT(DATEADD(month,1,@fechaInicial)))
 
 
 	UPDATE EstadoCuenta
-	SET SaldoFinal=@SaldoFinal, FechaFinal= @fechaFinal
+	SET SaldoFinal=@SaldoFinal, FechaFinal= @fechaFinal2
 	WHERE Id=@IdEstadoCuenta
 
 	SET @cont2+=1
@@ -623,8 +642,33 @@ BEGIN
 	SET @contE+=1
 
 	END;
-	 
+	Declare @diaFin INT, @diaIni INT;
+	SET @cantCO = (SELECT count(Id) from CuentaObjetivo  );
+	WHILE @idCuentaO<=@cantCO
+	BEGIN
 
+		SET @FechaFin= (SELECT FechaFinal FROM CuentaObjetivo WHERE Id=@idCuentaO)
+
+		SET @FechaIni= (SELECT FechaInicio FROM CuentaObjetivo WHERE Id=@idCuentaO)
+
+
+		SET @diaFin = (SELECT MONTH (@FechaFin))
+
+		SET @diaIni = (SELECT MONTH (@FechaIni))
+
+
+
+		SET @IdTasa2 = ABS(@diaFin-@diaIni)
+
+		UPDATE CuentaObjetivo
+		SET IdTasa=@IdTasa2
+		WHERE Id=@idCuentaO
+
+	SET @idCuentaO= @idCuentaO +1
+	END;
+
+
+	 
 	 --intereses CO
 	DECLARE @contCO INT = 1, @CantCuentasCO INT, @fechaInicioCO date, @fechaFinalCO date, @numMeses int, @saldoCO INT, 
 	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio DATE, @mes INT, @diaahorro INT, @fechaAhorro date, @diafechainicio INT; 
@@ -666,6 +710,8 @@ BEGIN
 			-- mapeo saldo y tasa intereses
 			SET @saldoCO = (SELECT (Saldo) FROM CuentaObjetivo WHERE Id = @contCO );
 			SET @IdTasaCO = (SELECT IdTasa FROM CuentaObjetivo WHERE Id = @contCO);
+
+
 			SET @IdTasa = (SELECT Id FROM TasasInteresesCO WHERE Id = @IdTasaCO); --mes
 			SET @tasa = (SELECT Tasa FROM TasasInteresesCO WHERE Id = @IdTasa);
 			SET @saldoCO = @saldoCO + (@saldoCO * (@tasa / 100));
@@ -675,6 +721,7 @@ BEGIN
 			--INSERT INTO InteresesCO (IDCO, IdCuenta,MontoIntereses) VALUES (@IDCO, @IdCuentaIntereses,@tasa, @descripCO)
 
 		SET @montoAhorrar =(SELECT MontoAhorrar FROM CuentaObjetivo WHERE Id = @contCO);
+
 		INSERT INTO MovInteresesCO (Fecha,Monto,IdCuentaObjetivo,NuevoInteresAcumulado,Descripcion) VALUES
 		(@FechaInicioCO,@saldoCO,@IDCO,@tasa,@descripCO)
 		-- contador del while 
@@ -683,3 +730,6 @@ BEGIN
 
 	SET @fechaInicial = (SELECT(DATEADD(DAY,1,@fechaInicial)))
 END;
+--DELETE FROM Personas WHERE Id >42
+--DELETE FROM TipoCambio WHERE Id >121
+
