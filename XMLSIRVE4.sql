@@ -651,14 +651,7 @@ BEGIN
 
 		SET @FechaIni= (SELECT FechaInicio FROM CuentaObjetivo WHERE Id=@idCuentaO)
 
-
-		SET @diaFin = (SELECT MONTH (@FechaFin))
-
-		SET @diaIni = (SELECT MONTH (@FechaIni))
-
-
-
-		SET @IdTasa2 = ABS(@diaFin-@diaIni)
+		SET @IdTasa2= ABS(DATEDIFF(MONTH,@FechaFin,@FechaIni))
 
 		UPDATE CuentaObjetivo
 		SET IdTasa=@IdTasa2
@@ -686,7 +679,6 @@ BEGIN
 
 		
 		SET @mesinicio = (SELECT MONTH(@fechaInicioCO));
-		--SET @añoinicio = EXTRACT(YEAR FROM @fechaInicioCO);
 
 		
 		SET @diafechainicio = (SELECT DAY(@fechaInicioCO));
