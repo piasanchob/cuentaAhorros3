@@ -284,7 +284,7 @@ BEGIN
 
 	-- insercion cuenta objetivo 
 
-	INSERT INTO dbo.CuentaObjetivo(Descripcion,DiaAhorro,FechaInicio,FechaFinal,MontoAhorrar,IdCuentaAhorros,NumCuentaObjetivo,Saldo)
+	INSERT INTO dbo.CuentaObjetivo(Descripcion,DiaAhorro,FechaInicio,FechaFinal,MontoAhorrar,IdCuentaAhorros,NumCuentaObjetivo,Saldo,IdTasa)
 	SELECT  
 		
 		Descripcion = T.Item.value('@Descripcion', 'varchar(64)'),
@@ -294,7 +294,8 @@ BEGIN
 		MontoAhorrar = T.Item.value('@MontoAhorrar', 'int'),
 		IdCuentaAhorros = (SELECT Id FROM CuentaAhorros WHERE NumCuenta = T.Item.value('@CuentaMaestra', 'int')),
 		NumCuentaObjetivo = T.Item.value('@NumeroCO', 'int'),
-		Saldo=0
+		Saldo=0,
+		IdTasa = (DATEDIFF(MONTH,T.item.value('@FechaFinal', 'DATE'),T.item.value('../@Fecha', 'DATE')))
 		
 		
 		
@@ -707,7 +708,7 @@ BEGIN
 			SET @mesfinal = (SELECT MONTH(@fechaFinalCO));
 
 			-- resta
-			SET @numMeses = ABS((@mesfinal - @mesinicio));
+			SET @numMeses = DATEDIFF(MONTH,@mesfinal,@mesinicio);
 
 			-- mapeo saldo y tasa intereses
 			SET @saldoCO = (SELECT (Saldo) FROM CuentaObjetivo WHERE Id = @contCO );
