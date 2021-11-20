@@ -4,6 +4,8 @@ DECLARE @datos XML, @division INT, @multiplicacion INT, @montoFinal INT
 DECLARE @i INT=1,
 @var2 INT, @cont2 INT =1, @fechaInicial2 DATE, @fechaFinal2 DATE, @idCuentaO INT = 1, @cantCO INT, @IdTasa2 INT, @FechaFin DATE, @FechaIni Date;
 
+DECLARE @saldoCA int, @saldo1CO int, @idca int;
+
 DECLARE @IdMov2 INT = 1, @IdTipoMov2 INT, @CantRetiroHumano INT, @CantRetiroAtm INT, @IdCuentaAhorro INT,@CantMov INT,
 @CantCuentas INT,
 @IdCuenta INT, @IdEstadoCuenta INT
@@ -728,6 +730,18 @@ BEGIN
 
 		INSERT INTO MovInteresesCO (Fecha,Monto,IdCuentaObjetivo,NuevoInteresAcumulado,Descripcion) VALUES
 		(@FechaInicioCO,@montoFinal,@IDCO,@tasa,@descripCO)
+
+		
+		SET @idca = (SELECT IdCuentaAhorros FROM CuentaObjetivo WHERE Id = @contCO)
+		SET @saldoCA = (SELECT Saldo FROM CuentaAhorros WHERE Id = @idca)
+		SET @saldo1CO = (SELECT Saldo FROM CuentaObjetivo WHERE Id = @contCO)
+		
+		UPDATE CuentaObjetivo 
+		SET Saldo = Saldo + @saldoCA
+		WHERE Id = @contCO
+		UPDATE CuentaAhorros 
+		SET Saldo = 0
+		WHERE Id = @idca
 		-- contador del while 
 		SET @contCO+=1
 	END;
