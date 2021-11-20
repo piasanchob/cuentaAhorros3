@@ -1,3 +1,5 @@
+
+
 CREATE PROCEDURE ListaBeneficiarios  
 @OutCodeResult INT
 
@@ -9,7 +11,7 @@ BEGIN
 	--
 	DECLARE @contBeneficiarios INT = 1, @cantBeneficiarios INT, @IdPersona INT, @IdBeneficiario INT;
 
-	CREATE TABLE TempPersonas LIKE Personas;
+	Declare @TempPersonas AS TABLE (Id INT, IdTipoDoc int, ValorDocIdentidad int, Nombre varchar(64));
 
 	SET @cantBeneficiarios = (SELECT count(Id) FROM Beneficiarios  )
 
@@ -19,10 +21,22 @@ BEGIN
 
 		SET @IdPersona = (SELECT IdPersona FROM Beneficiarios WHERE Id= @contBeneficiarios)
 
-		(SELECT * FROM Personas WHERE Id=@IdPersona)
+
+		INSERT INTO TempPersonas
+		SELECT Id, IdTipoDoc, ValorDocIdentidad, Nombre
+		FROM Personas WHERE Id=@IdPersona
+
+		SELECT Id AS Id FROM TempPersonas
+		UNION
+		SELECT IdTipoDoc AS IdTipoDoc FROM TempPersonas
+		UNION
+		SELECT ValorDocIdentidad AS ValorDocIdentidad FROM TempPersonas
+		UNION
+		SELECT Nombre AS Nombre FROM TempPersonas
+		U
 
 
-		SET @contBeneficiarios +=1
+     SET @contBeneficiarios +=1
 	
 	
 	--

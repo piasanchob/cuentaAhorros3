@@ -1,7 +1,6 @@
 USE cuentaAhorros
 
-DECLARE @datos XML
-
+DECLARE @datos XML, @division INT, @multiplicacion INT, @montoFinal INT
 DECLARE @i INT=1,
 @var2 INT, @cont2 INT =1, @fechaInicial2 DATE, @fechaFinal2 DATE, @idCuentaO INT = 1, @cantCO INT, @IdTasa2 INT, @FechaFin DATE, @FechaIni Date;
 
@@ -676,7 +675,7 @@ BEGIN
 		-- mapeo fechas inicial
 		SET @diaahorro = (SELECT (DiaAhorro) FROM CuentaObjetivo WHERE Id = @contCO )
 		SET @fechaInicioCO = (SELECT (FechaInicio) FROM CuentaObjetivo WHERE Id = @contCO );
-
+		SET @montoAhorrar =(SELECT MontoAhorrar FROM CuentaObjetivo WHERE Id = @contCO);
 		
 		SET @mesinicio = (SELECT MONTH(@fechaInicioCO));
 
@@ -705,17 +704,30 @@ BEGIN
 
 
 			SET @IdTasa = (SELECT Id FROM TasasInteresesCO WHERE Id = @IdTasaCO); --mes
-			SET @tasa = (SELECT Tasa FROM TasasInteresesCO WHERE Id = @IdTasa);
-			SET @saldoCO = @saldoCO + (@saldoCO * (@tasa / 100));
+			SET @tasa = (SELECT Tasa FROM TasasInteresesCO WHERE Id = @IdTasaCO);
+			
+
+
+			SET @division = (@tasa / 100)
+
+			SET @division= @division/12.0
+
+
+			SET @multiplicacion = (@montoAhorrar * @division);
+
+			SET @montoFinal= @montoAhorrar+@multiplicacion
+
+
+
 			DECLARE @descripCO varchar(64);
 			SET @descripCO = (SELECT Descripcion FROM CuentaObjetivo WHERE Id = @contCO );
 			-- monto acumulado va en tabla CO en columna interes acumulado, este insert iria abajo 
 			--INSERT INTO InteresesCO (IDCO, IdCuenta,MontoIntereses) VALUES (@IDCO, @IdCuentaIntereses,@tasa, @descripCO)
 
-		SET @montoAhorrar =(SELECT MontoAhorrar FROM CuentaObjetivo WHERE Id = @contCO);
+		
 
 		INSERT INTO MovInteresesCO (Fecha,Monto,IdCuentaObjetivo,NuevoInteresAcumulado,Descripcion) VALUES
-		(@FechaInicioCO,@saldoCO,@IDCO,@tasa,@descripCO)
+		(@FechaInicioCO,@montoFinal,@IDCO,@tasa,@descripCO)
 		-- contador del while 
 		SET @contCO+=1
 	END;
