@@ -28,8 +28,10 @@ DECLARE @contE INT=1, @IdCuentaAhorrosE INT, @IdEstadoCuentaE INT, @IdTipoCuenta
 
 DECLARE @mesinicio INT, @mesfinal INT;
 
+--SELECT @datos = CAST(xmlfile AS xml)
+--FROM OPENROWSET(BULK 'C:\Users\gmora\OneDrive\Desktop\2 SEMESTRE 2021\Bases de Datos\Tarea Programada 3\cuentaAhorros3\cuentaAhorros3\DatosTarea3.xml', SINGLE_BLOB) AS T(xmlfile)
 SELECT @datos = CAST(xmlfile AS xml)
-FROM OPENROWSET(BULK 'C:\Users\gmora\OneDrive\Desktop\2 SEMESTRE 2021\Bases de Datos\Tarea Programada 3\cuentaAhorros3\cuentaAhorros3\DatosTarea3.xml', SINGLE_BLOB) AS T(xmlfile)
+FROM OPENROWSET(BULK 'C:\Users\user\Documents\TEC\BASES1 FRANCO\CA3\DatosTarea3.xml', SINGLE_BLOB) AS T(xmlfile)
 
 --insercion usuarios
 
@@ -282,7 +284,7 @@ BEGIN
 
 	-- insercion cuenta objetivo 
 
-	INSERT INTO dbo.CuentaObjetivo(Descripcion,DiaAhorro,FechaInicio,FechaFinal,MontoAhorrar,IdCuentaAhorros,NumCuentaObjetivo,Saldo)
+	INSERT INTO dbo.CuentaObjetivo(Descripcion,DiaAhorro,FechaInicio,FechaFinal,MontoAhorrar,IdCuentaAhorros,NumCuentaObjetivo,Saldo,IdTasa)
 	SELECT  
 		
 		Descripcion = T.Item.value('@Descripcion', 'varchar(64)'),
@@ -292,7 +294,8 @@ BEGIN
 		MontoAhorrar = T.Item.value('@MontoAhorrar', 'int'),
 		IdCuentaAhorros = (SELECT Id FROM CuentaAhorros WHERE NumCuenta = T.Item.value('@CuentaMaestra', 'int')),
 		NumCuentaObjetivo = T.Item.value('@NumeroCO', 'int'),
-		Saldo=0
+		Saldo=0,
+		IdTasa = (DATEDIFF(MONTH,T.item.value('@FechaFinal', 'DATE'),T.item.value('../@Fecha', 'DATE')))
 		
 		
 		
@@ -664,7 +667,7 @@ BEGIN
 	 
 	 --intereses CO
 	DECLARE @contCO INT = 1, @CantCuentasCO INT, @fechaInicioCO date, @fechaFinalCO date, @numMeses int, @saldoCO INT, 
-	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio DATE, @mes INT, @diaahorro INT, @fechaAhorro date, @diafechainicio INT; 
+	@IdTasaCO INT, @IdTasa INT, @tasa INT, @añoinicio int, @mes INT, @diaahorro INT, @fechaAhorro date, @diafechainicio INT; 
 	DECLARE @IDCO int, @IdCuentaIntereses int, @MontoIntereses int, @montoAhorrar int;
 	SET @CantCuentasCO = (SELECT count(Id) from CuentaObjetivo  );
 
@@ -697,7 +700,7 @@ BEGIN
 			SET @mesfinal = (SELECT MONTH(@fechaFinalCO));
 
 			-- resta
-			SET @numMeses = ABS((@mesfinal - @mesinicio));
+			SET @numMeses = DATEDIFF(MONTH,@mesfinal,@mesinicio);
 
 			-- mapeo saldo y tasa intereses
 			SET @saldoCO = (SELECT (Saldo) FROM CuentaObjetivo WHERE Id = @contCO );
