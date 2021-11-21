@@ -66,3 +66,6 @@ DELETE FROM dbo.Personas;
 	DELETE FROM dbo.TipoMovCO;
 	DBCC CHECKIDENT ('[TipoMovCO]', RESEED, 0);
 	SELECT * FROM dbo.TipoMovCO;
+
+
+	--SELECT DATEADD(DAY,-21, '2021-11-20')
