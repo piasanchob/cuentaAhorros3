@@ -10,7 +10,7 @@ BEGIN
 	--
 	DECLARE @contBeneficiarios INT = 1, @cantBeneficiarios INT, @IdPersona INT, @IdBeneficiario INT, @valorDocIdentidad INT,
 	@nombre varchar(64), @Porcentaje INT, @cantCuentas INT, @Suma INT, @MontoRecibido INT, 
-	@Operacion INT, @mayor INT, @NumCuenta INT;
+	@Operacion INT, @mayor INT, @NumCuenta INT, @Fecha DATE;
 
 	Declare @TempPersonas AS TABLE (Id int identity(1,1),IdPersona INT, ValorDocIdentidad int, Nombre varchar(64), 
 	IdBeneficiario INT, Porcentaje INT ,cantCuentas Int, MontoRecibido INT, NumCuenta INT ,MayorCantidad INT )
@@ -76,7 +76,7 @@ EXEC ListaBeneficiarios 5
 
 
 
-CREATE PROCEDURE MultasATM @Ndias INT  
+CREATE PROCEDURE MultasATM @Ndias INT,
 @OutCodeResult INT
 
 AS
@@ -85,38 +85,69 @@ BEGIN
 	BEGIN TRY
 	
 	--
-	Declare @MultasAtm AS TABLE (Id int identity(1,1), Promedio INT, Ano Int, Mes INT )
+	Declare @MultasAtm AS TABLE (Id int identity(1,1),IdCuentaA INT ,Promedio INT, Ano Int, Mes INT )
 	DECLARE @Pomedio INT, @Ano INT , @Mes INT, @cantMovimientos INT, @cont INT =1, @IdEstadoC INT,
-	@Fecha date, @ATM INT = 5, @IdCuentaAhorro INT, @AtmOp INT, @IdTipoMov INT; 
+	@FechaFinal date, @ATM INT = 5, @IdCuentaAhorro INT, @AtmOp INT=0, @IdTipoMov INT, @fechaInicial DATE,
+	@contCuentasA INT = 1, @cantCuentas INT, @IdCuentaA INT, @FechaMov Date, @cont2 INT =1 , @AtmOp2 INT =0, @fecha INT ; 
 
-	SET @Fecha = '2022-01-31'
+	SET @FechaFinal = '2022-01-31'
+	
+	SET @fechaInicial =( SELECT DATEADD(DAY,-@Ndias, @FechaFinal))
+
 	SET @cantMovimientos =  (SELECT count(Id) from Movimientos );
+	SET @Ano = (SELECT YEAR ( @fechaInicial))
 
-	WHILE @cont<=@cantMovimientos 
-
-
-		SET @IdTipoMov =(SELECT IdTipoMov FROM Movimientos WHERE Id=@cont)
-		SET @IdCuentaAhorro = (SELECT IdCuenta FROM Movimientos WHERE Id=@cont)
+	SET @cantCuentas = (SELECT count(Id) from CuentaAhorros )
 
 
-
-		IF @IdTipoMov = 6
-			UPDATE EstadoCuenta
-			SET CantOpATM = CantOpATM + 1
-			WHERE IdCuentaAhorros=@IdCuenta
-
-
-		IF @IdTipoMov = 7 
+	WHILE @contCuentasA<= @cantCuentas
+	BEGIN 
 		
-			UPDATE EstadoCuenta
-			SET CantOpHumano = CantOpHumano + 1
-			WHERE IdCuentaAhorros=@IdCuenta
+		SET @IdCuentaAhorro =( SELECT  Id FROM CuentaAhorros WHERE Id=@contCuentasA)
 
+		SET @AtmOp = (SELECT CantOpATM FROM EstadoCuenta WHERE Id=@IdCuentaAhorro)
+		
+		IF (@AtmOp>8)
+			
+		BEGIN
+			
+			WHILE @cont2<=@cantMovimientos 
+			BEGIN
+				SET @IdCuentaA = (SELECT IdCuenta FROM Movimientos WHERE  Id=@cont2)
+				SET @IdTipoMov =(SELECT IdTipoMov FROM Movimientos WHERE  Id=@cont2)
+
+				WHILE @fechaInicial<=@FechaFinal	
+				BEGIN
+					IF (@IdTipoMov = 6 AND @IdCuentaA = @IdCuentaAhorro)
+						Begin
+							SET @AtmOp2 +=1
+							SET @Fecha = (SELECT MONTH (@fechaInicial))
+						END
+					ELSE
+					BEGIN
+						SET @fechaInicial = (SELECT(DATEADD(DAY,1,@fechaInicial)))
+						BREAK;
+					END
+					SET @fechaInicial = (SELECT(DATEADD(DAY,1,@fechaInicial)))
+				
+				END
+				--Print(@AtmOp2)
+				SET @cont2+=1
+			END;
+
+			IF @AtmOp2 >5
+			BEGIN 
+				INSERT INTO @MultasAtm
+				(IdCuentaA,Promedio,Ano, Mes)
+
+				SELECT @IdCuentaAhorro,@AtmOp/6.0,@Ano,@fecha FROM CuentaAhorros WHERE Id=@contCuentasA
+			END 
+		END;
+		
+		SET @contCuentasA+=1
+	END
 
 	
-
-		
-		SET @cont+=1
 	--
 	
 	END TRY
@@ -129,45 +160,9 @@ BEGIN
 END;
 
 
+DROP PROCEDURE MultasATM
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+EXEC MultasATM 7,5
 
 
 
